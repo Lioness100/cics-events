@@ -5,7 +5,7 @@ Bun.serve({
 	port: process.env.PORT ?? 3000,
 	async fetch() {
 		const eventAttrs = await scrapeEvents();
-		const events = createEvents(eventAttrs);
+		const events = createEvents(eventAttrs, { calName: 'CICS Events' });
 		return new Response(events.value, {
 			headers: {
 				'Content-Type': 'text/calendar',
