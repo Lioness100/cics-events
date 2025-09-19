@@ -1,29 +1,31 @@
 {
-  "name": "cics-events",
-  "module": "src/index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-	"start": "bun run .",
-	"pm2": "pm2 start ecosystem.yml"
-  },
-  "devDependencies": {
-    "@lioness100/configs": "^1.0.34",
-    "@types/bun": "latest",
-    "eslint": "^8.57.0",
-    "pm2": "^6.0.11",
-    "prettier": "^3.6.2"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "cheerio": "1.1.0",
-    "ics": "^3.8.1",
-    "node-cache": "^5.1.2"
-  },
-  "prettier": "@lioness100/configs/prettier",
-  "eslintConfig": {
-    "extends": ["./node_modules/@lioness100/configs/.eslintrc.json"]
-  }
+	"name": "cics-events",
+	"module": "src/index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"start": "bun run .",
+		"pm2": "pm2 start ecosystem.yml"
+	},
+	"devDependencies": {
+		"@lioness100/configs": "^1.0.34",
+		"@types/bun": "latest",
+		"eslint": "^8.57.0",
+		"pm2": "^6.0.11",
+		"prettier": "^3.6.2"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"cheerio": "1.1.0",
+		"ics": "^3.8.1",
+		"node-cache": "^5.1.2"
+	},
+	"prettier": "@lioness100/configs/prettier",
+	"eslintConfig": {
+		"extends": [
+			"./node_modules/@lioness100/configs/.eslintrc.json"
+		]
+	}
 }
