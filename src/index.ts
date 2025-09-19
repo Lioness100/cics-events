@@ -2,7 +2,6 @@ import { createEvents } from 'ics';
 import { scrapeEvents } from './scrapeEvents';
 
 Bun.serve({
-	port: process.env.PORT ?? 3000,
 	async fetch() {
 		const eventAttrs = await scrapeEvents();
 		const events = createEvents(eventAttrs, { calName: 'CICS Events' });
