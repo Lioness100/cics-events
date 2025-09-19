@@ -29,7 +29,6 @@ export async function scrapeEventPage(page: number) {
 				.get(eventURL.toString());
 
 			if (cached) {
-				console.log(`Cache hit for ${eventURL}`);
 				return JSON.parse(cached.value) as EventAttributes;
 			}
 
