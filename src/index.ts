@@ -2,7 +2,7 @@ import { createEvents } from 'ics';
 import { scrapeEvents } from './scrapeEvents';
 
 Bun.serve({
-	port: 3003,
+	port: process.env.PORT ?? 3000,
 	async fetch() {
 		const eventAttrs = await scrapeEvents();
 		const events = createEvents(eventAttrs);
@@ -15,4 +15,4 @@ Bun.serve({
 	}
 });
 
-console.log('Server running on http://localhost:3003');
+console.log(`Server running on http://localhost:${process.env.PORT ?? 3000}`);
