@@ -1,7 +1,7 @@
 import { createEvents } from 'ics';
 import { scrapeEvents } from './scrapeEvents';
 
-Bun.serve({
+const server = Bun.serve({
 	async fetch() {
 		const eventAttrs = await scrapeEvents();
 		const events = createEvents(eventAttrs, { calName: 'CICS Events' });
@@ -14,4 +14,4 @@ Bun.serve({
 	}
 });
 
-console.log(`Server running on http://localhost:${process.env.PORT ?? 3000}`);
+console.log(`Server running on http://localhost:${server.port}`);
