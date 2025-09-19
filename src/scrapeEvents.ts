@@ -33,7 +33,7 @@ export async function scrapeEventPage(page: number) {
 			start: start.getTime(),
 			end: end.getTime(),
 			title,
-			description: summary,
+			description: `${summary}\n\n${eventURL}`,
 			location: `${room} ${building}`,
 			url: eventURL.toString()
 		};
