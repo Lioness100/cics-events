@@ -6,7 +6,7 @@ import type { EventAttributes } from 'ics';
 const cache = new NodeCache({ stdTTL: 60 * 60 * 73 });
 
 export async function scrapeEventPage(page: number) {
-	const url = new URL('https://www.cics.umass.edu/events');
+	const url = new URL('https://www.cics.umass.edu/events?field_event__date_value=Today');
 	url.searchParams.set('page', page.toString());
 
 	const data = await fetch(url).then((res) => res.text());
