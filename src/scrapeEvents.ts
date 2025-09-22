@@ -55,8 +55,9 @@ export async function scrapeEventPage(page: number) {
 	return Promise.all(eventPromises);
 }
 
+const NUM_PAGES = 5;
 export async function scrapeEvents() {
-	const pages = [0, 1];
+	const pages = Array.from({ length: NUM_PAGES }, (_, i) => i);
 	const events = (await Promise.all(pages.map((page) => scrapeEventPage(page)))).flat();
 
 	db.run('DELETE FROM cache');
