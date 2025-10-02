@@ -88,9 +88,8 @@ export async function scrapeEvents() {
 		(event, index, self) => index === self.findIndex((e) => e.url === event.url)
 	);
 
-	db.run('DELETE FROM cache');
 	for (const event of allEvents) {
-		db.run(`INSERT INTO cache (key, value) VALUES (?, ?)`, [event.url!, JSON.stringify(event)]);
+		db.run(`INSERT OR REPLACE INTO cache (key, value) VALUES (?, ?)`, [event.url!, JSON.stringify(event)]);
 	}
 
 	return allEvents;
