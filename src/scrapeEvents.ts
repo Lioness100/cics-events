@@ -6,14 +6,14 @@ import { isEventCached, getAllPastEvents, getEventKey, saveEvents } from './data
 
 const EVENTS_PER_PAGE = 5;
 
-export async function scrapeEventPage($: CheerioAPI, el: Element, url: URL) {
+export async function scrapeEventPage($: CheerioAPI, el: Element, url: URL, offset?: Date) {
 	const href = $('.event-teaser__title a', el).attr('href')!;
 
 	const startTimeDisplay = $('.event-teaser__time', el).text();
 	const day = Number($('.event-teaser__day', el).text());
 	const monthStr = $('.event-teaser__month', el).text();
 	const month = new Date(`${monthStr} 1`).getMonth();
-	const start = timeStringsToDate(month, day, startTimeDisplay).getTime();
+	const start = timeStringsToDate(month, day, startTimeDisplay, offset).getTime();
 
 	const eventURL = new URL(href, url).toString();
 	const key = getEventKey({ start, url: eventURL });
@@ -44,8 +44,9 @@ export async function scrapeCalendarPage(page: number, startDate: string) {
 	const data = await fetch(url).then((res) => res.text());
 	const $ = load(data);
 
+	const offset = startDate === 'Today' ? undefined : new Date(startDate);
 	const eventPromises = $('article .event')
-		.map(async (_, el) => scrapeEventPage($, el, url))
+		.map(async (_, el) => scrapeEventPage($, el, url, offset))
 		.get();
 
 	const events = await Promise.all(eventPromises);

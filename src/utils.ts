@@ -1,6 +1,6 @@
 import type { EventAttributes } from './types';
 
-export function timeStringsToDate(month: number, day: number, timeStr: string) {
+export function timeStringsToDate(month: number, day: number, timeStr: string, offset = new Date()) {
 	const [time, modifier] = timeStr.split(' ');
 	let [hours, minutes] = time.split(':').map(Number);
 	if (modifier.toLowerCase() === 'pm' && hours < 12) {
@@ -9,10 +9,8 @@ export function timeStringsToDate(month: number, day: number, timeStr: string) {
 		hours = 0;
 	}
 
-	const now = new Date();
-	let year = now.getFullYear();
-
-	if (month < now.getMonth() || (month === now.getMonth() && day < now.getDate())) {
+	let year = offset.getFullYear();
+	if (month < offset.getMonth() || (month === offset.getMonth() && day < offset.getDate())) {
 		year += 1;
 	}
 
