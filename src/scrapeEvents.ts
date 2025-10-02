@@ -13,7 +13,12 @@ db.run(`
   )
 `);
 
-export async function scrapeEventPage(page: number) {
+interface PageData {
+	events: EventAttributes[];
+	totalResults?: number;
+}
+
+export async function scrapeEventPage(page: number, includeMetadata = false): Promise<PageData> {
 	const url = new URL('https://www.cics.umass.edu/events?field_event__date_value=Today');
 	url.searchParams.set('page', page.toString());
 
@@ -52,18 +57,41 @@ export async function scrapeEventPage(page: number) {
 		})
 		.get();
 
-	return Promise.all(eventPromises);
+	const events = await Promise.all(eventPromises);
+	const result: PageData = { events };
+
+	if (includeMetadata) {
+		const resultText = $('.views-exposed-form__results').text();
+		const numResultsMatch = /\d+/.exec(resultText);
+		if (numResultsMatch) {
+			result.totalResults = Number(numResultsMatch[0]);
+		}
+	}
+
+	return result;
 }
 
-const NUM_PAGES = 5;
+const EVENTS_PER_PAGE = 5;
+
 export async function scrapeEvents() {
-	const pages = Array.from({ length: NUM_PAGES }, (_, i) => i);
-	const events = (await Promise.all(pages.map((page) => scrapeEventPage(page)))).flat();
+	const firstPageResult = await scrapeEventPage(0, true);
+
+	if (!firstPageResult.totalResults) {
+		return firstPageResult.events;
+	}
+
+	const totalPages = Math.ceil(firstPageResult.totalResults / EVENTS_PER_PAGE);
+	const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 1);
+
+	const remainingResults = await Promise.all(remainingPages.map((page) => scrapeEventPage(page)));
+	const allEvents = [...firstPageResult.events, ...remainingResults.flatMap((result) => result.events)].filter(
+		(event, index, self) => index === self.findIndex((e) => e.url === event.url)
+	);
 
 	db.run('DELETE FROM cache');
-	for (const event of events) {
+	for (const event of allEvents) {
 		db.run(`INSERT INTO cache (key, value) VALUES (?, ?)`, [event.url!, JSON.stringify(event)]);
 	}
 
-	return events;
+	return allEvents;
 }
