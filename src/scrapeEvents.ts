@@ -4,10 +4,10 @@ import { load } from 'cheerio';
 import { Database } from 'bun:sqlite';
 import type { EventAttributes } from 'ics';
 
-const db = new Database('cache.db');
+const db = new Database('history.db');
 
 db.run(`
-  CREATE TABLE IF NOT EXISTS cache (
+  CREATE TABLE IF NOT EXISTS history (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   )
@@ -30,7 +30,7 @@ export async function scrapeEventPage(page: number, includeMetadata = false): Pr
 			const href = $('.event-teaser__title a', el).attr('href')!;
 			const eventURL = new URL(href, url);
 			const cached = db
-				.query<{ value: string }, string>(`SELECT value FROM cache WHERE key = ?`)
+				.query<{ value: string }, string>(`SELECT value FROM history WHERE key = ?`)
 				.get(eventURL.toString());
 
 			if (cached) {
@@ -89,7 +89,7 @@ export async function scrapeEvents() {
 	);
 
 	for (const event of allEvents) {
-		db.run(`INSERT OR REPLACE INTO cache (key, value) VALUES (?, ?)`, [event.url!, JSON.stringify(event)]);
+		db.run(`INSERT OR REPLACE INTO history (key, value) VALUES (?, ?)`, [event.url!, JSON.stringify(event)]);
 	}
 
 	return allEvents;
