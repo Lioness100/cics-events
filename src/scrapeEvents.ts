@@ -1,96 +1,71 @@
-/* eslint-disable import/no-unresolved */
-/* eslint-disable @typescript-eslint/naming-convention */
-import { load } from 'cheerio';
-import { Database } from 'bun:sqlite';
-import type { EventAttributes } from 'ics';
+import { load, type CheerioAPI } from 'cheerio';
+import type { Element } from 'domhandler';
+import type { EventAttributes } from './types';
+import { timeStringsToDate, dedupeEvents } from './utils';
+import { isEventCached, getAllPastEvents, getEventKey, saveEvents } from './database';
 
-const db = new Database('history.db');
+const EVENTS_PER_PAGE = 5;
 
-db.run(`
-  CREATE TABLE IF NOT EXISTS history (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  )
-`);
+export async function scrapeEventPage($: CheerioAPI, el: Element, url: URL) {
+	const href = $('.event-teaser__title a', el).attr('href')!;
 
-interface PageData {
-	events: EventAttributes[];
-	totalResults?: number;
+	const startTimeDisplay = $('.event-teaser__time', el).text();
+	const day = Number($('.event-teaser__day', el).text());
+	const monthStr = $('.event-teaser__month', el).text();
+	const month = new Date(`${monthStr} 1`).getMonth();
+	const start = timeStringsToDate(month, day, startTimeDisplay).getTime();
+
+	const eventURL = new URL(href, url).toString();
+	const key = getEventKey({ start, url: eventURL });
+
+	if (isEventCached(key)) {
+		return;
+	}
+
+	const eventPageData = await fetch(eventURL).then((res) => res.text());
+	const $event = load(eventPageData);
+
+	const summary = $('.event-teaser__summary', el).text().trim();
+	const building = $event('.page-header__location').text();
+	const room = $event('.page-header__campus_specific_location').text();
+	const title = $event('.page-header__title-value').text();
+	const end = Date.parse($event('time').eq(1).attr('datetime')!) || undefined;
+
+	const description = `${summary}\n\n${eventURL}`;
+	const location = `${room} ${building}`.trim() || undefined;
+	return { start, end, title, description, location, url: eventURL };
 }
 
-export async function scrapeEventPage(page: number, includeMetadata = false): Promise<PageData> {
-	const url = new URL('https://www.cics.umass.edu/events?field_event__date_value=Today');
+export async function scrapeCalendarPage(page: number, startDate: string) {
+	const url = new URL('https://www.cics.umass.edu/events');
 	url.searchParams.set('page', page.toString());
+	url.searchParams.set('field_event__date_value', startDate);
 
 	const data = await fetch(url).then((res) => res.text());
 	const $ = load(data);
 
 	const eventPromises = $('article .event')
-		.map(async (_, el) => {
-			const href = $('.event-teaser__title a', el).attr('href')!;
-			const eventURL = new URL(href, url);
-			const cached = db
-				.query<{ value: string }, string>(`SELECT value FROM history WHERE key = ?`)
-				.get(eventURL.toString());
-
-			if (cached) {
-				return JSON.parse(cached.value) as EventAttributes;
-			}
-
-			const eventPageData = await fetch(eventURL).then((res) => res.text());
-			const $event = load(eventPageData);
-			const summary = $('.event-teaser__summary', el).text().trim();
-			const room = $event('.page-header__campus_specific_location').text();
-			const building = $event('.page-header__location').text();
-			const [start, end] = $event('time')
-				.map((_, el) => Date.parse($event(el).attr('datetime')!))
-				.get();
-
-			return {
-				start,
-				end,
-				title: $event('.page-header__title-value').text(),
-				description: `${summary}\n\n${eventURL}`,
-				location: `${room} ${building}`,
-				url: eventURL.toString()
-			};
-		})
+		.map(async (_, el) => scrapeEventPage($, el, url))
 		.get();
 
 	const events = await Promise.all(eventPromises);
-	const result: PageData = { events };
+	const resultText = $('.views-exposed-form__results').text();
+	const totalResults = Number(/\d+/.exec(resultText)![0]);
 
-	if (includeMetadata) {
-		const resultText = $('.views-exposed-form__results').text();
-		const numResultsMatch = /\d+/.exec(resultText);
-		if (numResultsMatch) {
-			result.totalResults = Number(numResultsMatch[0]);
-		}
-	}
-
-	return result;
+	return { events: events.filter(Boolean) as EventAttributes[], totalResults };
 }
 
-const EVENTS_PER_PAGE = 5;
-
-export async function scrapeEvents() {
-	const firstPageResult = await scrapeEventPage(0, true);
-
-	if (!firstPageResult.totalResults) {
-		return firstPageResult.events;
-	}
-
+export async function scrapeEvents(startDate = 'Today') {
+	const firstPageResult = await scrapeCalendarPage(0, startDate);
 	const totalPages = Math.ceil(firstPageResult.totalResults / EVENTS_PER_PAGE);
 	const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 1);
 
-	const remainingResults = await Promise.all(remainingPages.map((page) => scrapeEventPage(page)));
-	const allEvents = [...firstPageResult.events, ...remainingResults.flatMap((result) => result.events)].filter(
-		(event, index, self) => index === self.findIndex((e) => e.url === event.url)
-	);
+	const remainingResults = await Promise.all(remainingPages.map((page) => scrapeCalendarPage(page, startDate)));
+	const newEvents = dedupeEvents([...firstPageResult.events, ...remainingResults.flatMap((result) => result.events)]);
 
-	for (const event of allEvents) {
-		db.run(`INSERT OR REPLACE INTO history (key, value) VALUES (?, ?)`, [event.url!, JSON.stringify(event)]);
-	}
+	const pastEvents = getAllPastEvents();
+	const allEvents = dedupeEvents([...pastEvents, ...newEvents]);
+	saveEvents(newEvents);
 
 	return allEvents;
 }

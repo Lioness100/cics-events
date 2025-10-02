@@ -10,6 +10,7 @@
       "devDependencies": {
         "@lioness100/configs": "^1.0.34",
         "@types/bun": "latest",
+        "domhandler": "^5.0.3",
         "eslint": "^8.57.0",
         "pm2": "^6.0.11",
         "prettier": "^3.6.2",
