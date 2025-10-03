@@ -1,5 +1,5 @@
 import { createEvents } from 'ics';
-import { scrapeEvents } from './scrapeEvents';
+import { scrapeEvents } from './scraper';
 
 const server = Bun.serve({
 	async fetch() {

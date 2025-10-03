@@ -1,4 +1,4 @@
-import { scrapeEvents } from './scrapeEvents';
+import { scrapeEvents } from './scraper';
 import { getAllPastEvents } from './database';
 
 const START_DATE = '09/02/25';
