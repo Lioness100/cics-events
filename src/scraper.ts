@@ -6,7 +6,7 @@ import { isEventCached, getAllPastEvents, getEventKey, saveEvents } from './data
 
 const EVENTS_PER_PAGE = 5;
 
-export async function scrapeEventPage($: CheerioAPI, el: Element, url: URL, offset?: Date) {
+export async function scrapeEventPage($: CheerioAPI, el: Element, baseURL: URL, offset?: Date) {
 	const href = $('.event-teaser__title a', el).attr('href')!;
 
 	const startTimeDisplay = $('.event-teaser__time', el).text();
@@ -15,14 +15,14 @@ export async function scrapeEventPage($: CheerioAPI, el: Element, url: URL, offs
 	const month = new Date(`${monthStr} 1`).getMonth();
 	const start = timeStringsToDate(month, day, startTimeDisplay, offset).getTime();
 
-	const eventURL = new URL(href, url).toString();
-	const key = getEventKey({ start, url: eventURL });
+	const url = new URL(href, baseURL).toString();
+	const key = getEventKey({ start, url });
 
 	if (isEventCached(key)) {
 		return;
 	}
 
-	const eventPageData = await fetch(eventURL).then((res) => res.text());
+	const eventPageData = await fetch(url).then((res) => res.text());
 	const $event = load(eventPageData);
 
 	const summary = $('.event-teaser__summary', el).text().trim();
@@ -31,9 +31,9 @@ export async function scrapeEventPage($: CheerioAPI, el: Element, url: URL, offs
 	const title = $event('.page-header__title-value').text();
 	const end = Date.parse($event('time').eq(1).attr('datetime')!) || undefined;
 
-	const description = `${summary}\n\n${eventURL}`;
+	const description = `${summary}\n\n${url}`;
 	const location = `${room} ${building}`.trim() || undefined;
-	return { start, end, title, description, location, url: eventURL };
+	return { start, end, title, description, location, url };
 }
 
 export async function scrapeCalendarPage(page: number, startDate: string) {
