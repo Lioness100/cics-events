@@ -2,6 +2,16 @@
 
 ![Demo](https://github.com/user-attachments/assets/baeeef9d-d3ec-4896-bebc-407c0815a381)
 
+Serves an API to get upcoming events at
+https://www.cics.umass.edu/events in ICS format. You can input this URL into
+your calendar app of choice.
+
+API routes:
+
+- `/events.ics`: Returns upcoming events in ICS format.
+- `/subscribe`: Redirects to subscribe to the calendar in Google Calendar.
+- `/`: Serves the main HTML page with the embedded calendar.
+
 To install dependencies:
 
 ```bash
@@ -19,16 +29,6 @@ To run:
 ```bash
 bun start
 ```
-
-Serves an API to get upcoming events at
-https://www.cics.umass.edu/events in ICS format. You can input this URL into
-your calendar app of choice.
-
-API routes:
-
-- `/events.ics`: Returns upcoming events in ICS format.
-- `/subscribe`: Redirects to subscribe to the calendar in Google Calendar.
-- `/`: Serves the main HTML page with the embedded calendar.
 
 To backfill events since September, run:
 
