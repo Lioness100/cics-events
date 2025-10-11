@@ -1,5 +1,7 @@
 # cics-events
 
+![Demo](https://github.com/user-attachments/assets/baeeef9d-d3ec-4896-bebc-407c0815a381)
+
 To install dependencies:
 
 ```bash
