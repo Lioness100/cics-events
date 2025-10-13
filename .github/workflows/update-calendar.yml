@@ -37,7 +37,7 @@ jobs:
         run: bun install
 
       - name: Generate calendar file
-        run: bun run generate
+        run: bun start
 
       - name: Commit updated database
         run: |
