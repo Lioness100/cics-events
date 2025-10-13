@@ -26,7 +26,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .eslintcache
 .cache
 *.tsbuildinfo
-*.db
+
+# generated files
+events.ics
 
 # IntelliJ based IDEs
 .idea

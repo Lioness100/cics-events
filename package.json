@@ -4,9 +4,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"start": "bun run .",
-		"pm2": "pm2 start ecosystem.yml",
-		"populate": "bun src/populate.ts"
+		"populate": "bun src/populate.ts",
+		"start": "bun src/index.ts"
 	},
 	"dependencies": {
 		"cheerio": "1.1.0",
@@ -17,7 +16,6 @@
 		"@types/bun": "latest",
 		"domhandler": "^5.0.3",
 		"eslint": "^8.57.0",
-		"pm2": "^6.0.11",
 		"prettier": "^3.6.2"
 	},
 	"peerDependencies": {

@@ -1,5 +1,0 @@
-apps:
-  - name: "cics-events"
-    script: "src/index.ts"
-    interpreter: "bun"
-    time: true
