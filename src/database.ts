@@ -17,7 +17,7 @@ export function getEventKey(event: { start: number; url: string }) {
 
 export function getAllEvents() {
 	const rows = db.query<{ event: string; key: string }, []>(`SELECT key, event FROM history`).all();
-	return rows.map((row) => ({ event: JSON.parse(row.event) as EventAttributes, key: row.key }));
+	return new Map(rows.map((row) => [row.key, JSON.parse(row.event) as EventAttributes]));
 }
 
 export function saveEventsAndCleanOrphans(
@@ -33,7 +33,7 @@ export function saveEventsAndCleanOrphans(
 	const parsedEvents: EventAttributes[] = [];
 
 	const transaction = db.transaction(() => {
-		for (const { key, event } of allEvents) {
+		for (const [key, event] of allEvents) {
 			if (event.start >= now && !currentEventKeys.has(key)) {
 				deleteStmt.run(key);
 			} else {
