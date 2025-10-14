@@ -34,7 +34,16 @@ export async function scrapeEventPage($: CheerioAPI, el: Element, baseURL: URL, 
 
 	const description = `${summary}\n\n${url}`;
 	const location = `${room} ${building}`.trim() || undefined;
-	return { start, end, title, description, location, url } as EventAttributes;
+	return {
+		start,
+		end,
+		title,
+		description,
+		location,
+		url,
+		startOutputType: 'local',
+		endOutputType: 'local'
+	} as EventAttributes;
 }
 
 export async function scrapeCalendarPage(page: number, startDate: string, cache: EventCache) {
