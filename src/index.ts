@@ -2,6 +2,8 @@
 import { createEvents } from 'ics';
 import { scrapeEvents } from './scraper';
 
+process.env.TZ = 'America/New_York';
+
 export async function generateCalendar(startDate?: string) {
 	const eventAttrs = await scrapeEvents(startDate);
 	const events = createEvents(eventAttrs, { calName: 'CICS Events' });
