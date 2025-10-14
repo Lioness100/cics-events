@@ -15,28 +15,38 @@ export function getEventKey(event: { start: number; url: string }) {
 	return `${event.url}:${event.start}`;
 }
 
-export function isEventCached(key: string) {
-	const result = db
-		.query<{ count: number }, [string]>(`SELECT COUNT(*) as count FROM history WHERE key = ?`)
-		.get(key)!;
-
-	return result.count > 0;
+export function getAllEvents() {
+	const rows = db.query<{ event: string; key: string }, []>(`SELECT key, event FROM history`).all();
+	return rows.map((row) => ({ event: JSON.parse(row.event) as EventAttributes, key: row.key }));
 }
 
-export function getAllPastEvents() {
-	return db
-		.query<{ event: string }, []>(`SELECT event FROM history`)
-		.all()
-		.map((row) => JSON.parse(row.event) as EventAttributes);
-}
+export function saveEventsAndCleanOrphans(
+	events: EventAttributes[],
+	currentEventKeys: Set<string>,
+	allEvents: ReturnType<typeof getAllEvents>
+) {
+	const now = Date.now();
 
-export function saveEvents(events: EventAttributes[]) {
-	const insert = db.query(`INSERT OR REPLACE INTO history (key, event) VALUES (?, ?)`);
-	const transaction = db.transaction((events: EventAttributes[]) => {
+	const insertStmt = db.query(`INSERT OR REPLACE INTO history (key, event) VALUES (?, ?)`);
+	const deleteStmt = db.query(`DELETE FROM history WHERE key = ?`);
+
+	const parsedEvents: EventAttributes[] = [];
+
+	const transaction = db.transaction(() => {
+		for (const { key, event } of allEvents) {
+			if (event.start >= now && !currentEventKeys.has(key)) {
+				deleteStmt.run(key);
+			} else {
+				parsedEvents.push(event);
+			}
+		}
+
 		for (const event of events) {
-			insert.run(getEventKey(event), JSON.stringify(event));
+			insertStmt.run(getEventKey(event), JSON.stringify(event));
 		}
 	});
 
-	transaction(events);
+	transaction();
+
+	return parsedEvents;
 }

@@ -2,11 +2,11 @@ import { load, type CheerioAPI } from 'cheerio';
 import type { Element } from 'domhandler';
 import type { EventAttributes } from './types';
 import { timeStringsToDate, dedupeEvents } from './utils';
-import { isEventCached, getAllPastEvents, getEventKey, saveEvents } from './database';
+import { getAllEvents, getEventKey, saveEventsAndCleanOrphans } from './database';
 
 const EVENTS_PER_PAGE = 5;
 
-export async function scrapeEventPage($: CheerioAPI, el: Element, baseURL: URL, offset?: Date) {
+export async function scrapeEventPage($: CheerioAPI, el: Element, baseURL: URL, cache: Set<string>, offset?: Date) {
 	const href = $('.event-teaser__title a', el).attr('href')!;
 
 	const startTimeDisplay = $('.event-teaser__time', el).text();
@@ -18,7 +18,7 @@ export async function scrapeEventPage($: CheerioAPI, el: Element, baseURL: URL, 
 	const url = new URL(href, baseURL).toString();
 	const key = getEventKey({ start, url });
 
-	if (isEventCached(key)) {
+	if (cache.has(key)) {
 		return;
 	}
 
@@ -36,7 +36,7 @@ export async function scrapeEventPage($: CheerioAPI, el: Element, baseURL: URL, 
 	return { start, end, title, description, location, url };
 }
 
-export async function scrapeCalendarPage(page: number, startDate: string) {
+export async function scrapeCalendarPage(page: number, startDate: string, cachedKeys: Set<string>) {
 	const url = new URL('https://www.cics.umass.edu/events');
 	url.searchParams.set('page', page.toString());
 	url.searchParams.set('field_event__date_value', startDate);
@@ -46,7 +46,7 @@ export async function scrapeCalendarPage(page: number, startDate: string) {
 
 	const offset = startDate === 'Today' ? undefined : new Date(startDate);
 	const eventPromises = $('article .event')
-		.map(async (_, el) => scrapeEventPage($, el, url, offset))
+		.map(async (_, el) => scrapeEventPage($, el, url, cachedKeys, offset))
 		.get();
 
 	const events = await Promise.all(eventPromises);
@@ -57,16 +57,24 @@ export async function scrapeCalendarPage(page: number, startDate: string) {
 }
 
 export async function scrapeEvents(startDate = 'Today') {
-	const firstPageResult = await scrapeCalendarPage(0, startDate);
+	const allEvents = getAllEvents();
+	const cachedKeys = new Set(allEvents.map(({ key }) => key));
+
+	const firstPageResult = await scrapeCalendarPage(0, startDate, cachedKeys);
 	const totalPages = Math.ceil(firstPageResult.totalResults / EVENTS_PER_PAGE);
 	const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 1);
 
-	const remainingResults = await Promise.all(remainingPages.map((page) => scrapeCalendarPage(page, startDate)));
-	const newEvents = dedupeEvents([...firstPageResult.events, ...remainingResults.flatMap((result) => result.events)]);
+	const remainingResults = await Promise.all(
+		remainingPages.map((page) => scrapeCalendarPage(page, startDate, cachedKeys))
+	);
 
-	const pastEvents = getAllPastEvents();
-	const allEvents = dedupeEvents([...pastEvents, ...newEvents]);
-	saveEvents(newEvents);
+	const scrapedEvents = dedupeEvents([
+		...firstPageResult.events,
+		...remainingResults.flatMap((result) => result.events)
+	]);
 
-	return allEvents;
+	const scrapedEventKeys = new Set(scrapedEvents.map((event) => getEventKey(event)));
+	const cachedEvents = saveEventsAndCleanOrphans(scrapedEvents, scrapedEventKeys, allEvents);
+
+	return [...cachedEvents, ...scrapedEvents];
 }

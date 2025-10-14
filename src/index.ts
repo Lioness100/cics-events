@@ -2,13 +2,18 @@
 import { createEvents } from 'ics';
 import { scrapeEvents } from './scraper';
 
-async function generateCalendar() {
-	const eventAttrs = await scrapeEvents();
+export async function generateCalendar(startDate?: string) {
+	const eventAttrs = await scrapeEvents(startDate);
 	const events = createEvents(eventAttrs, { calName: 'CICS Events' });
 	await Bun.write('events.ics', events.value!);
 	console.log('Successfully generated events.ics');
 }
 
 if (import.meta.main) {
-	await generateCalendar();
+	const startDate = Bun.argv[2];
+	if (startDate) {
+		console.log(`Starting historical event population from ${startDate}…`);
+	}
+
+	await generateCalendar(startDate);
 }

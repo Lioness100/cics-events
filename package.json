@@ -4,8 +4,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"populate": "bun src/populate.ts",
-		"start": "bun src/index.ts"
+		"start": "bun .",
+		"populate": "bun start 09/02/25"
 	},
 	"dependencies": {
 		"cheerio": "1.1.0",
